@@ -1,0 +1,24 @@
+rules_version = '2';
+
+// Seules les adresses listées ici peuvent lire et modifier les recettes.
+// À copier dans la console Firebase → Firestore Database → Règles → Publier.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function estAutorise() {
+      return request.auth != null
+        && request.auth.token.email in [
+          'ziyadakkar@gmail.com',
+          'EMAIL_DE_CHARLOTTE@gmail.com'
+        ];
+    }
+
+    match /recipes/{recipeId} {
+      allow read, write: if estAutorise();
+    }
+
+    // Tout le reste est fermé.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

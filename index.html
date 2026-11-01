@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Les recettes de Charlotte</title>
+<meta name="theme-color" content="#c8553d">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Recettes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="wrap" id="app"><div class="status">Chargement…</div></div>
+
+<div class="overlay" id="confirm">
+  <div class="dialog">
+    <p id="confirmText">Supprimer cette recette ?</p>
+    <div class="actions" style="margin-top:0;justify-content:flex-end">
+      <button class="btn ghost" id="confirmNo">Annuler</button>
+      <button class="btn" id="confirmYes" style="background:#a8321f">Supprimer</button>
+    </div>
+  </div>
+</div>
+<div class="update" id="update" hidden>
+  <span>Nouvelle version disponible</span>
+  <button class="btn" id="updateBtn">Actualiser</button>
+</div>
+<div class="toast" id="toast"></div>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>
