@@ -1,7 +1,7 @@
 // Les recettes de Charlotte — application web installable.
 // Données : Firebase Firestore (collection « recipes »). Connexion : e-mail + mot de passe.
 // Garder APP_VERSION identique à VERSION dans sw.js.
-const APP_VERSION = '1.0.0';
+const APP_VERSION = '1.0.1';
 const FIREBASE_VERSION = '10.12.2';
 const DEFAULT_TAGS = ['Facile', 'Rapide', 'Facile medium', 'Médium'];
 
