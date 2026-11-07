@@ -1,7 +1,7 @@
 // Les recettes de Charlotte — application web installable.
 // Données : Firebase Firestore (collection « recipes »). Connexion : e-mail + mot de passe.
 // Garder APP_VERSION identique à VERSION dans sw.js.
-const APP_VERSION = '1.0.1';
+const APP_VERSION = '1.1.0';
 const FIREBASE_VERSION = '10.12.2';
 const DEFAULT_TAGS = ['Facile', 'Rapide', 'Facile medium', 'Médium'];
 
@@ -9,7 +9,7 @@ const app = document.getElementById('app');
 const state = {
   backend: null, user: null, authReady: false,
   recipes: [], loaded: false, slow: false, error: null,
-  q: '', tag: null, cat: null,
+  q: '', tags: new Set(), cat: null,
   checks: {},
   importing: false
 };
@@ -25,6 +25,7 @@ function toast(msg) { const t = document.getElementById('toast'); t.textContent 
 function getChecks(id) { if (!state.checks[id]) state.checks[id] = { ing: new Set(), step: new Set() }; return state.checks[id]; }
 const allCats = () => [...new Set(state.recipes.map(r => r.category).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'fr'));
 function allTags() { const s = new Set(DEFAULT_TAGS); state.recipes.forEach(r => (r.tags || []).forEach(t => s.add(t))); return [...s]; }
+const filtersOn = () => !!(state.cat || state.tags.size || state.q.trim());
 const findRecipe = id => state.recipes.find(r => r.id === id);
 const footer = () => `<footer class="foot">Version ${APP_VERSION}${state.user ? ` · ${esc(state.user.email)} · <button id="logout">Se déconnecter</button>` : ''}</footer>`;
 
@@ -105,16 +106,22 @@ function renderList() {
   if (state.error) html += `<div class="banner">${esc(state.error)}</div>`;
   else if (state.slow && !state.loaded) html += `<div class="banner">Les recettes mettent du temps à arriver… vérifie ta connexion.</div>`;
   html += `<input class="search" id="q" type="search" placeholder="Rechercher une recette ou un ingrédient…" value="${esc(state.q)}">`;
-  html += `<div class="chips"><button class="chip ${!state.tag && !state.cat ? 'on' : ''}" data-clear="1">Toutes</button>`;
-  allTags().forEach(t => html += `<button class="chip ${state.tag === t ? 'on' : ''}" data-tag="${esc(t)}">${esc(t)}</button>`);
-  const cats = allCats(); if (cats.length > 1) cats.forEach(c => html += `<button class="chip ${state.cat === c ? 'on' : ''}" data-cat="${esc(c)}">${esc(c)}</button>`);
+  // Ligne 1 : catégories (une seule à la fois). Ligne 2 : étiquettes (plusieurs, cumulatives).
+  html += `<div class="filters">`;
+  html += `<div class="filter-row"><span class="filter-label">Catégorie</span><div class="chips">`
+    + `<button class="chip ${!state.cat ? 'on' : ''}" data-cat="">Toutes</button>`
+    + allCats().map(c => `<button class="chip ${state.cat === c ? 'on' : ''}" data-cat="${esc(c)}">${esc(c)}</button>`).join('')
+    + `</div></div>`;
+  html += `<div class="filter-row"><span class="filter-label">Étiquettes</span><div class="chips">`
+    + allTags().map(t => `<button class="chip tagchip ${state.tags.has(t) ? 'on ' + tagClass(t) : ''}" data-tag="${esc(t)}">${state.tags.has(t) ? '✓ ' : ''}${esc(t)}</button>`).join('')
+    + `</div></div>`;
   html += `</div>`;
 
   if (!state.loaded && !state.error) html += `<div class="status">Chargement des recettes…</div>`;
   else {
     const q = norm(state.q);
     const list = state.recipes.filter(r => {
-      if (state.tag && !(r.tags || []).includes(state.tag)) return false;
+      for (const t of state.tags) if (!(r.tags || []).includes(t)) return false;
       if (state.cat && r.category !== state.cat) return false;
       if (!q) return true;
       const hay = norm([r.name, r.category, (r.tags || []).join(' '), ...(r.groups || []).flatMap(g => [g.title, ...(g.items || [])])].join(' '));
@@ -122,23 +129,26 @@ function renderList() {
     }).sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''));
     if (!state.recipes.length && state.loaded) {
       html += `<div class="empty">Aucune recette pour l'instant.<br><br><button class="btn" id="importBtn" ${state.importing ? 'disabled' : ''}>${state.importing ? 'Import en cours…' : 'Importer les recettes de départ'}</button></div>`;
-    } else if (!list.length) html += `<div class="empty">Aucune recette ne correspond.</div>`;
-    else html += `<div class="grid">` + list.map(r => `
+    } else if (!list.length) html += `<div class="empty">Aucune recette ne correspond à ces filtres.<br><br><button class="btn ghost" data-reset="1">Effacer les filtres</button></div>`;
+    else {
+      if (filtersOn()) html += `<div class="result-bar"><span>${list.length} recette${list.length > 1 ? 's' : ''} sur ${state.recipes.length}</span><button class="linkbtn" data-reset="1">Effacer les filtres</button></div>`;
+      html += `<div class="grid">` + list.map(r => `
       <button class="card" data-open="${esc(r.id)}">
         <div class="emo">${esc(r.emoji || '🍽️')}</div>
         <h3>${esc(r.name)}</h3>
         ${r.category ? `<div class="cat">${esc(r.category)}</div>` : ''}
         <div class="tags">${(r.tags || []).map(t => `<span class="tag ${tagClass(t)}">${esc(t)}</span>`).join('')}</div>
       </button>`).join('') + `</div>`;
+    }
   }
   app.innerHTML = html + footer();
 
   const qi = document.getElementById('q');
   qi.addEventListener('input', e => { state.q = e.target.value; const p = e.target.selectionStart; renderList(); const n = document.getElementById('q'); n.focus(); try { n.setSelectionRange(p, p); } catch (_) { } });
   document.getElementById('addBtn').onclick = () => go('ajouter');
-  app.querySelectorAll('[data-tag]').forEach(b => b.onclick = () => { const t = b.dataset.tag; state.tag = state.tag === t ? null : t; state.cat = null; renderList(); });
-  app.querySelectorAll('[data-cat]').forEach(b => b.onclick = () => { const c = b.dataset.cat; state.cat = state.cat === c ? null : c; state.tag = null; renderList(); });
-  app.querySelectorAll('[data-clear]').forEach(b => b.onclick = () => { state.tag = null; state.cat = null; renderList(); });
+  app.querySelectorAll('[data-tag]').forEach(b => b.onclick = () => { const t = b.dataset.tag; state.tags.has(t) ? state.tags.delete(t) : state.tags.add(t); renderList(); });
+  app.querySelectorAll('[data-cat]').forEach(b => b.onclick = () => { const c = b.dataset.cat; state.cat = (!c || state.cat === c) ? null : c; renderList(); });
+  app.querySelectorAll('[data-reset]').forEach(b => b.onclick = () => { state.tags.clear(); state.cat = null; state.q = ''; renderList(); });
   app.querySelectorAll('[data-open]').forEach(b => b.onclick = () => go('r-' + b.dataset.open));
   const ib = document.getElementById('importBtn'); if (ib) ib.onclick = importSeed;
   bindFooter();
