@@ -1,7 +1,7 @@
 // Service worker : permet l'installation et l'ouverture hors connexion.
 // Stratégie « réseau d'abord » : on charge toujours la dernière version en ligne,
 // la copie locale ne sert que sans réseau. Changer VERSION à chaque mise à jour.
-const VERSION = '1.1.0';
+const VERSION = '1.2.0';
 const CACHE = 'recettes-' + VERSION;
 const SHELL = [
   './', './index.html', './style.css', './app.js', './firebase-config.js',

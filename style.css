@@ -107,3 +107,8 @@
   .chip.tagchip.on.t-medium{background:var(--orange-soft);color:var(--orange)}
   .result-bar{display:flex;justify-content:space-between;align-items:center;color:var(--muted);font-size:14px;margin:-6px 0 12px}
   .linkbtn{background:none;border:0;color:var(--accent);font-weight:600;cursor:pointer;padding:0;font-size:14px}
+  .newtag{display:flex;gap:8px;margin-top:10px}
+  .newtag input{flex:1;min-width:0}
+  .newtag .btn{padding:8px 14px}
+  .tag.t-custom,.tag:not([class*="t-facile"]):not([class*="t-rapide"]):not([class*="t-medium"]){background:#ece6f5;color:#5b4a86}
+  .chip.tagchip.on:not([class*="t-facile"]):not([class*="t-rapide"]):not([class*="t-medium"]){background:#ece6f5;color:#5b4a86}

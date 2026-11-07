@@ -1,7 +1,7 @@
 // Les recettes de Charlotte — application web installable.
 // Données : Firebase Firestore (collection « recipes »). Connexion : e-mail + mot de passe.
 // Garder APP_VERSION identique à VERSION dans sw.js.
-const APP_VERSION = '1.1.0';
+const APP_VERSION = '1.2.0';
 const FIREBASE_VERSION = '10.12.2';
 const DEFAULT_TAGS = ['Facile', 'Rapide', 'Facile medium', 'Médium'];
 
@@ -109,7 +109,6 @@ function renderList() {
   // Ligne 1 : catégories (une seule à la fois). Ligne 2 : étiquettes (plusieurs, cumulatives).
   html += `<div class="filters">`;
   html += `<div class="filter-row"><span class="filter-label">Catégorie</span><div class="chips">`
-    + `<button class="chip ${!state.cat ? 'on' : ''}" data-cat="">Toutes</button>`
     + allCats().map(c => `<button class="chip ${state.cat === c ? 'on' : ''}" data-cat="${esc(c)}">${esc(c)}</button>`).join('')
     + `</div></div>`;
   html += `<div class="filter-row"><span class="filter-label">Étiquettes</span><div class="chips">`
@@ -147,7 +146,7 @@ function renderList() {
   qi.addEventListener('input', e => { state.q = e.target.value; const p = e.target.selectionStart; renderList(); const n = document.getElementById('q'); n.focus(); try { n.setSelectionRange(p, p); } catch (_) { } });
   document.getElementById('addBtn').onclick = () => go('ajouter');
   app.querySelectorAll('[data-tag]').forEach(b => b.onclick = () => { const t = b.dataset.tag; state.tags.has(t) ? state.tags.delete(t) : state.tags.add(t); renderList(); });
-  app.querySelectorAll('[data-cat]').forEach(b => b.onclick = () => { const c = b.dataset.cat; state.cat = (!c || state.cat === c) ? null : c; renderList(); });
+  app.querySelectorAll('[data-cat]').forEach(b => b.onclick = () => { const c = b.dataset.cat; state.cat = state.cat === c ? null : c; renderList(); });
   app.querySelectorAll('[data-reset]').forEach(b => b.onclick = () => { state.tags.clear(); state.cat = null; state.q = ''; renderList(); });
   app.querySelectorAll('[data-open]').forEach(b => b.onclick = () => go('r-' + b.dataset.open));
   const ib = document.getElementById('importBtn'); if (ib) ib.onclick = importSeed;
@@ -219,7 +218,8 @@ function renderForm(id) {
         <input type="text" id="cat" list="cats" value="${esc(r ? r.category : 'Plat dîner')}" placeholder="Ex. Plat dîner, Dessert…">
         <datalist id="cats">${allCats().map(c => `<option value="${esc(c)}">`).join('')}</datalist></div>
       <div class="row"><label>Étiquettes</label>
-        <div class="chips" style="margin:0" id="tagPick">${allTags().map(t => `<button type="button" class="chip ${sel.has(t) ? 'on' : ''}" data-t="${esc(t)}">${esc(t)}</button>`).join('')}</div></div>
+        <div class="chips" style="margin:0" id="tagPick">${allTags().map(t => `<button type="button" class="chip ${sel.has(t) ? 'on' : ''}" data-t="${esc(t)}">${esc(t)}</button>`).join('')}</div>
+        <div class="newtag"><input type="text" id="newTag" maxlength="30" placeholder="Nouvelle étiquette (ex. Végétarien)"><button type="button" class="btn ghost" id="addTag">＋ Ajouter</button></div></div>
       <div class="row"><label for="src">Lien source <span class="hint">(Instagram, YouTube, site…)</span></label>
         <input type="url" id="src" value="${esc(r ? r.source || '' : '')}" placeholder="https://…"></div>
       <div class="row"><label for="ing">Ingrédients <span class="hint">— un par ligne. Pour un sous-groupe, écris son titre suivi de « : » (ex. « Marinade : »).</span></label>
@@ -234,7 +234,26 @@ function renderForm(id) {
   document.getElementById('back').onclick = back;
   document.getElementById('cancel').onclick = back;
   document.getElementById('f').addEventListener('input', () => { formDirty = true; });
-  app.querySelectorAll('#tagPick [data-t]').forEach(b => b.onclick = () => { const t = b.dataset.t; sel.has(t) ? sel.delete(t) : sel.add(t); b.classList.toggle('on'); formDirty = true; });
+  const bindTagChip = b => b.onclick = () => { const t = b.dataset.t; sel.has(t) ? sel.delete(t) : sel.add(t); b.classList.toggle('on'); formDirty = true; };
+  app.querySelectorAll('#tagPick [data-t]').forEach(bindTagChip);
+  const addTag = () => {
+    const input = document.getElementById('newTag');
+    let t = input.value.trim().replace(/\s+/g, ' ');
+    if (!t) return;
+    t = t.charAt(0).toUpperCase() + t.slice(1);
+    // Réutilise l'étiquette existante si elle existe déjà (sans tenir compte des accents ni des majuscules)
+    const existing = [...document.querySelectorAll('#tagPick [data-t]')].find(b => norm(b.dataset.t) === norm(t));
+    if (existing) { if (!sel.has(existing.dataset.t)) existing.click(); }
+    else {
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'chip on'; b.dataset.t = t; b.textContent = t;
+      bindTagChip(b); document.getElementById('tagPick').appendChild(b);
+      sel.add(t); formDirty = true;
+    }
+    input.value = ''; input.focus();
+  };
+  document.getElementById('addTag').onclick = addTag;
+  document.getElementById('newTag').addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); addTag(); } });
   document.getElementById('f').addEventListener('submit', async e => {
     e.preventDefault();
     const err = document.getElementById('err'); err.textContent = '';
