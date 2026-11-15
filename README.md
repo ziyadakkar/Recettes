@@ -18,7 +18,8 @@ Application web installable (PWA) de recettes, partagée entre Ziyad et Charlott
 | `firestore.rules` | Qui peut lire et écrire les recettes |
 | `manifest.json`, `icons/` | Ce qui rend l'app installable : nom, icône, couleurs |
 | `sw.js` | Service worker : cache hors connexion et mises à jour |
-| `data/recettes.json` | Les 12 recettes de départ, importées au premier lancement. Sert aussi de sauvegarde |
+| `data/recettes.json` | Les 12 recettes de départ, importées au premier lancement |
+| `sauvegarde/` | Script Google de sauvegarde automatique dans Drive, et son guide d'installation |
 
 ## Mise en place (une seule fois)
 
@@ -49,4 +50,4 @@ Application web installable (PWA) de recettes, partagée entre Ziyad et Charlott
 Les recettes ne sont jamais touchées par une mise à jour du code.
 
 ## Sauvegarde
-Dans la console Firebase, ouvre **Firestore → recipes**. Pour une sauvegarde complète, demande à Claude d'exporter les recettes dans `data/recettes.json`.
+Chaque nuit, un script Google recopie toutes les recettes en documents lisibles (Google Docs, exportables en Word) dans le dossier Drive « Recettes de Charlotte – Sauvegarde ». Installation et dépannage : voir [`sauvegarde/README.md`](sauvegarde/README.md).

@@ -1,10 +1,12 @@
 rules_version = '2';
 
-// Seules les adresses listées ici peuvent lire et modifier les recettes.
+// Qui peut lire et modifier les recettes.
 // À copier dans la console Firebase → Firestore Database → Règles → Publier.
 service cloud.firestore {
   match /databases/{database}/documents {
-    function estAutorise() {
+
+    // Les personnes qui utilisent l'app : lecture ET écriture.
+    function estMembre() {
       return request.auth != null
         && request.auth.token.email in [
           'ziyadakkar@gmail.com',
@@ -12,8 +14,15 @@ service cloud.firestore {
         ];
     }
 
+    // Le compte utilisé par le script de sauvegarde Google : lecture SEULEMENT.
+    function estSauvegarde() {
+      return request.auth != null
+        && request.auth.token.email == 'ziyadakkar+sauvegarde@gmail.com';
+    }
+
     match /recipes/{recipeId} {
-      allow read, write: if estAutorise();
+      allow read: if estMembre() || estSauvegarde();
+      allow write: if estMembre();
     }
 
     // Tout le reste est fermé.
